@@ -1,0 +1,245 @@
+<div id="select">
+    <el-button :disabled="disabled" @click="getCheckedNodes" size="mini">应用</el-button>
+    <el-button type="primary" @click="build(data)" v-show="data.length==0">创建节点</el-button>
+    <el-tree show-checkbox default-expand-all ref="tree" draggable @node-drop="drop" :data="data" :props="defaultProps" @node-click="handleNodeClick"
+        @check-change="selectNode">
+        <span @mouseover="data.flag=true" @mouseout="data.flag=false" slot-scope="{ node, data }">
+            <span>{{ data.text }}</span>
+
+            <span v-show="data.flag">
+                <el-button type="text" @click.stop="append(data)" v-show="data.pid==0">
+                    <i class="el-icon-circle-plus-outline"></i>添加
+                </el-button>
+                <el-button @click="edit(data)" type="text">
+                    <i class="el-icon-edit"></i>编辑
+                </el-button>
+                <el-button @click="bro(data)" type="text" v-show="data.pid==0">
+                    <i class="el-icon-star-off"></i>添加根节点
+                </el-button>
+                <el-button @click="remove(node,data)" type="text" v-show="data.children.length==0">
+                    <i class="el-icon-delete"></i>删除
+                </el-button>
+            </span>
+        </span>
+
+    </el-tree>
+
+</div>
+
+<script>
+    new Vue({
+        el: '#select',
+        data: function () {
+            return {
+                disabled: false,
+                text: [],
+                data: [],
+                ndata: [],
+                pid: '',
+                defaultProps: {
+                    children: 'children',
+                    text: 'text'
+                }
+            };
+        },
+        created() {
+
+            var _this = this
+            $.get('/select', function (result) {
+                if (result.error != 0) { return }
+                _this.data = result.data
+            })
+
+        },
+        methods: {
+            selectNode(data, onSelect) {
+                this.ndata.push(data);
+                if (data.children.length == 0) {
+                    if (onSelect) {
+                        this.text.push(data)
+                    } else {
+                        var index = this.text.indexOf(data)
+                        this.text.splice(index, 1)
+                    }
+                }
+                for (var k = 0; k < this.ndata.length; k++) {
+                    if (this.ndata[k].children.length == 0) {
+                        this.pid = this.ndata[k].pid
+                        for (var i = 0; i < this.data.length; i++) {
+                            for (var j = 0; j < this.data[i].children.length; j++) {
+
+                                if (this.data[i].children[j].pid != this.pid) {
+                                    this.data[i].children[j].disabled = 1
+                                }
+                                if (this.text.length == 0) {
+                                    this.data[i].children[j].disabled = 0
+                                    this.ndata = []
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            getCheckedNodes() {
+                // for (var i = 0; i < this.$refs.tree.getCheckedNodes().length; i++) {
+                //     if (this.$refs.tree.getCheckedNodes()[i].children.length == 0) {
+                //         this.text.push(this.$refs.tree.getCheckedNodes()[i])
+                //     }
+                // }
+                this.disabled = true
+                $.get('/way/use', { text: JSON.stringify(this.text) }, function (result) {
+                    if (result.error == 0) {
+
+                    }
+                })
+            },
+
+            build() {
+                var _this = this
+                this.$prompt('请输入内容', '创建节点', {
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    callback(action, obj) {
+                        if (action != 'confirm') { return }
+                        $.post('/select/brot', {
+                            text: obj.inputValue,
+                            pid: 0,
+                            sort: 0
+                        }, function (result) {
+                            if (result.error != 0) { return }
+                            _this.data.push({
+                                text: obj.inputValue,
+                                id: result.insertId,
+                                pid: 0,
+                                flag: false,
+                            })
+                        })
+
+                    }
+                })
+            },
+            drop: function (node1, node2, pos) {
+                var id = node1.data.id,
+                    pid = '',
+                    sort = ''
+                if (pos == 'before') {
+                    if (node2.previousSibling.previousSibling) {
+                        var prenode = node2.previousSibling.previousSibling
+                        presort = prenode.data.sort
+                    } else {
+                        presort = node2.data.sort - 0.1
+                    }
+                    pid = node2.data.pid,
+                        sort = (presort + node2.data.sort) / 2
+                } else if (pos == 'after') {
+                    if (node2.nextSibling.nextSibling) {
+                        var nextnode = node2.nextSibling.nextSibling
+                        nextsort = nextnode.data.sort
+                    } else {
+                        nextsort = node2.data.sort + 0.1
+                    }
+                    pid = node2.data.pid,
+                        sort = (nextsort + node2.data.sort) / 2
+                }
+                //  else {
+                //     pid = node2.data.id,
+                //         sort = 0
+                // }
+                $.post('/select/sort', {
+                    id: id,
+                    pid: pid,
+                    sort: sort
+                }, function (result) {
+                    if (result.error != 0) { return }
+                })
+            },
+            append(data) {
+                var _this = this
+                this.$prompt('请输入内容', '添加子节点', {
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    callback(action, obj) {
+                        if (action != 'confirm') { return }
+                        $.post('/select/append', {
+                            text: obj.inputValue,
+                            pid: data.id,
+                            sort: 0,
+                        }, function (result) {
+                            if (result.error != 0) { return }
+                            data.children.push({
+                                text: obj.inputValue,
+                                id: result.id,
+                                flag: false,
+                                children: [],
+                            })
+                        })
+
+                    }
+                })
+            },
+            bro(data) {
+                var _this = this
+                this.$prompt('请输入内容', '添加根节点', {
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    callback(action, obj) {
+                        if (action != 'confirm') { return }
+                        $.post('/select/brot', {
+                            text: obj.inputValue,
+                            pid: data.pid,
+                            sort: 0
+                        }, function (result) {
+                            if (result.error != 0) { return }
+                            _this.data.push({
+                                text: obj.inputValue,
+                                id: result.insertId,
+                                pid: 0,
+                                children: [],
+                                flag: false,
+                            })
+                        })
+
+                    }
+                })
+            },
+            remove(node, data) {
+                this.$confirm('是否删除', '删除子节点', {
+                    callback: function (action) {
+                        if (action == 'confirm') {
+                            $.get('/select/remove', { id: data.id }, function (result) {
+                                if (result.error != 0) { return }
+                                const parent = node.parent;
+                                const children = parent.data.children || parent.data;
+                                const index = children.findIndex(d => d.id === data.id);
+                                children.splice(index, 1);
+                            })
+
+                        }
+                    }
+                })
+
+            },
+            edit(data) {
+                var _this = this
+                this.$prompt('请输入内容', '编辑子节点', {
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    inputValue: data.text,
+                    callback(action, obj) {
+                        if (action != 'confirm') { return }
+                        $.post('/select/edit', {
+                            id: data.id,
+                            text: obj.inputValue
+                        }, function (result) {
+                            if (result.error != 0) { return }
+                            _this.$set(data, 'text', obj.inputValue)
+                        })
+                    }
+                })
+            },
+            handleNodeClick(data) {
+                console.log(data);
+            }
+        }
+    })
+</script>

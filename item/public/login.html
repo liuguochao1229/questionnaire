@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        body{
+            background: url('/pic/bg.jpg') 
+        }
+        #container {
+            width: 500px;
+            margin: 100px auto 0 auto;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+        }
+
+        .h1 {
+            font-size: 1.5rem;
+            padding: 1rem 0;
+            margin: 1rem 0;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center
+            /* border-bottom: 1px solid rgba(0, 0, 0, 0.1); */
+        }
+
+        a {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        a:hover {
+            color: rgba(0, 0, 0, 0.8);
+        }
+        .el-form-item__label{
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div class="h1">
+            问卷系统登录          
+        </div>
+        <el-form id="loginform" status-icon="true" :rules="rules" label-positi on="left" action="/login" method="post" ref="form"
+            :model="form" label-width="80px">
+            <el-form-item label="用户名" prop="username">
+                <el-input v-model="form.username" name="username"></el-input>
+            </el-form-item>
+
+            <el-form-item label="密码" prop="password">
+                <el-input type="password" v-model="form.password" name="password"></el-input>
+            </el-form-item>  
+            <el-form-item>
+                <el-button @click="login()" type="primary">立即登录</el-button>
+                <a href="/regist" style="margin-left:100px">立即注册</a>
+            </el-form-item>
+        </el-form>
+    </div>
+    <script>
+        new Vue({
+            el: '#container',
+            data: function () {
+                var _this = this
+                
+                return {
+                    form: {
+                        username: '',
+                        password: '',
+                    },
+                    rules: {
+                        username: [
+                            {
+                                validator: function (rule, value, callback) {
+                                    var usernamereg = /^[a-zA-Z0-9_-]{4,16}$/
+                                    if (value.trim() == '') {
+                                        callback(new Error('请输入用户名'))
+                                    }else {
+                                       callback()
+                                    }
+
+                                },
+                                trigger: 'blur'
+                            },
+
+                        ],
+                        password: [
+                            {
+                                validator: function (rule, value, callback) {
+                                    if (value.trim() == '') {
+                                        callback(new Error('请输入密码'))
+                                    }else {
+                                        callback()
+                                    }
+                                    trigger: 'blur'
+                                }
+                            }
+                        ],
+                        
+                    }
+                }
+            },
+            methods: {
+                login() {//验证通过 方可提交
+                    this.$refs.form.validate(function (valid) {
+                        if(valid){
+                            loginform.submit()
+                        }
+                    })
+
+                }
+            }
+        })
+
+    </script>
+</body>
+
+</html>

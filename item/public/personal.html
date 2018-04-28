@@ -1,0 +1,144 @@
+<div id="personal">
+    <span>个人信息</span>
+    <el-table :data="table" style="width: 100%">
+        <el-table-column>
+            <template slot-scope="props">
+                <el-form label-position="left" inline class="demo-table-expand">
+                    <el-form-item label="头像">
+                        <img :src="props.row.photo" alt="">
+                        <el-button @click="editi" type="text">
+                            <i class="el-icon-edit"></i>上传头像
+                        </el-button>
+                    </el-form-item>
+                    <el-form-item label="id">
+                        <span>{{ props.row.id }}</span>
+                    </el-form-item>
+                    <el-form-item label="姓名">
+                        <span>{{ props.row.username }}</span>
+                    </el-form-item>
+                    <el-form-item label="性别">
+                        <span>{{ sex[props.row.sex] }}</span>
+                    </el-form-item>
+                    <el-form-item label="电话">
+                        <span>{{ props.row.phone }}</span>
+                        <el-button @click="editp" type="text">
+                            <i class="el-icon-edit"></i>修改
+                        </el-button>
+                    </el-form-item>
+                    <el-form-item label="邮箱">
+                        <span>{{ props.row.email }}</span>
+                        <el-button @click="edite" type="text">
+                            <i class="el-icon-edit"></i>修改
+                        </el-button>
+                    </el-form-item>
+
+                </el-form>
+            </template>
+        </el-table-column>
+    </el-table>
+    </template>
+
+</div>
+<style>
+    .demo-table-expand {
+        font-size: 0;
+    }
+
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+    }
+
+    img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+    }
+</style>
+<script>
+    new Vue({
+        el: "#personal",
+        data: {
+            table: [],
+            sex: ['男', '女', '保密']
+        },
+        created() {
+            var _this = this
+            $.get('/users/id', function (result) {
+                if (result.error == 0) {
+                    _this.table = result.data
+                }
+            })
+        },
+        methods: {
+            editi(){
+                indexVm.handle('/menu/webupload.html')
+            },
+            editp() {
+                var _this = this
+                this.$prompt('请输入手机号', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPattern: /^((13[0-9])|(14[5|7])|(15([0-3]|[5-9]))|(18[0,5-9]))\d{8}$/,
+                    inputErrorMessage: '手机号格式不正确'
+                }).then(({ value }) => {
+                    $.get('/edit/phone', { value: value }, result => {
+                        if (result.error == 0) {
+                            this.$message({
+                                type: 'success',
+                                message: '你的手机号是: ' + value
+                            });
+                            $.get('/users/id', function (result) {
+                                if (result.error == 0) {
+                                    _this.table = result.data
+                                    console.log(result.data)
+                                }
+                            })
+                        }
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '取消输入'
+                    });
+                });
+            },
+            edite() {
+                var _this = this
+                this.$prompt('请输入邮箱', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPattern: /[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/,
+                    inputErrorMessage: '邮箱格式不正确'
+                }).then(({ value }) => {
+                    $.get('/edit/email', { value: value }, result => {
+                        if (result.error == 0) {
+                            this.$message({
+                                type: 'success',
+                                message: '你的邮箱是: ' + value
+                            });
+                            $.get('/users/id', function (result) {
+                                if (result.error == 0) {
+                                    _this.table = result.data
+                                    console.log(result.data)
+                                }
+                            })
+                        }
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '取消输入'
+                    });
+                });
+
+            }
+        }
+    })
+</script>

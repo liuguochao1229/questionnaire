@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/Cookies.js/1.2.1/cookies.min.js"></script>
+    <script src="//unpkg.com/echarts/dist/echarts.min.js"></script>
+    <script src="//unpkg.com/v-charts/lib/index.min.js"></script>
+
+    <link rel="stylesheet" href="/js/webuploader/webuploader.css">
+    <script src="/js/webuploader/webuploader.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #header .qh {
+            width: 240px;
+            height: 75px;
+            margin-left: 10px;
+            margin-top: 10px;
+            border-radius: 0%;
+        }
+
+        #container {
+            width: 100%;
+        }
+
+        #content {
+            width: 100%;
+        }
+
+        #cleft {
+            width: 15%;
+        }
+
+        #cright {
+            width: 80%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        /* .log {
+            float: right;
+            margin-right: 100px;
+            margin-top: 20px;
+        } */
+
+        /* .log .lf {
+            width: 60px;
+            height: 60px;
+        } */
+
+        .logout {
+            padding: 5px 20px;
+            background: rgb(236, 245, 255);
+            border-radius: 3px;
+            float: right;
+            margin-right: 100px;
+            margin-top: 80px;
+            border: 1px solid #409EFF
+        }
+
+        .logout a {
+            color: #409EFF;
+            text-decoration: none;
+        }
+
+        .logout:hover {
+            background: #409EFF;
+        }
+
+        .logout:hover a {
+            color: white;
+        }
+
+        #cleft,
+        #cright {
+            float: left;
+            box-sizing: border-box;
+        }
+
+        .el-input--mini .el-input__inner {
+            width: 40%;
+            height: 40px !important;
+        }
+
+        .el-form .el-form-item--mini .el-form-item__label {
+            line-height: 40px;
+        }
+
+        .el-menu-item {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div id="header">
+            <img src="/pic/bd.png" alt="" class="qh">
+            <div class="logout">
+                <a href="/logout">注销</a>
+            </div>
+        </div>
+        <div id="content">
+            <div id="cleft">
+                <el-menu default-active="2" class="el-menu-vertical-demo" @select="handle" background-color="white" text-color="black" active-text-color="#ffd04b">
+                    <el-menu-item index="/menu/personal.html">
+                        <i class="el-icon-info"></i>
+                        <span slot="title">个人中心</span>
+                    </el-menu-item>
+                    <el-menu-item index="/menu/users.html">
+                        <i class="el-icon-document"></i>
+                        <span slot="title">用户管理</span>
+                    </el-menu-item>
+
+                    <el-menu-item index="/menu/outline.html">
+                        <i class="el-icon-menu"></i>
+                        <span slot="title">大纲管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="/menu/papers.html">
+                        <i class="el-icon-location"></i>
+                        <span slot="title">问卷管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="/menu/select.html">
+                        <i class="el-icon-setting"></i>
+                        <span slot="title">选项管理</span>
+                    </el-menu-item>
+                </el-menu>
+
+            </div>
+            <div id="cright">
+
+            </div>
+        </div>
+        <div id="footer">
+
+        </div>
+    </div>
+
+    <script>
+        var indexVm = new Vue({
+            el: "#cleft",
+            methods: {
+                handle(index) {
+                    $.get(index, function (result) {
+                        $('#cright').html(result)
+                    })
+                },
+
+            },
+            created() {
+                var index = '/menu/personal.html'
+                $.get(index, function (result) {
+                    $('#cright').html(result)
+                })
+            }
+
+        })
+    </script>
+</body>
+
+</html>

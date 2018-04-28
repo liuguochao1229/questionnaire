@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        #container {
+            width: 400px;
+            margin: 40px auto 0 auto;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+        }
+
+        .h1 {
+            font-size: 1.5rem;
+            padding: 1rem 0;
+            margin: 1rem 0;
+            color: rgba(0, 0, 0, 0.7);
+            /* border-bottom: 1px solid rgba(0, 0, 0, 0.1); */
+        }
+
+        a {
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        a:hover {
+            color: rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div class="h1">
+                问卷系统注册
+        </div>
+        <el-form id="registform" status-icon="true" :rules="rules" label-positi on="left" action="/users/add" method="post" ref="form"
+            :model="form" label-width="80px">
+            <el-form-item label="用户名" prop="username">
+                <el-input v-model="form.username" name="username"></el-input>
+            </el-form-item>
+
+            <el-form-item label="密码" prop="password">
+                <el-input type="password" v-model="form.password" name="password"></el-input>
+            </el-form-item>
+
+            <el-form-item label="确认密码" prop="password2">
+                <el-input type="password" v-model="form.password2"></el-input>
+            </el-form-item>
+
+            <el-form-item label="邮箱" prop="email">
+                <el-input v-model="form.email" name="email"></el-input>
+            </el-form-item>
+            <el-form-item label="手机" prop="phone">
+                <el-input v-model="form.phone" name="phone"></el-input>
+            </el-form-item>
+            <el-form-item label="性别">
+                <el-radio-group v-model="form.sex">
+                    <el-radio name="sex" label="1">男</el-radio>
+                    <el-radio name="sex" label="2">女</el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <el-form-item>
+                <el-button @click="regist()" type="primary">立即注册</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+    <script>
+        new Vue({
+            el: '#container',
+            data: function () {
+                var _this = this
+                var chkExist = function (option, callback) {
+                    $.get('/chkExist', {
+                        filed: option.filed,
+                        value: option.value,
+                        table: option.table
+                    }, function (result) {
+                        if (result.error == 0) {
+                            callback()
+                        } else {
+                            callback('已存在')
+                        }
+                    })
+                }
+                var chkpwd = function (rule, value, callback) {
+                    if (value.trim() == '') {
+                        callback(new Error('请输入确认密码'))
+                    } else if (value == _this.form.password) {
+                        callback()
+                    } else {
+                        callback(new Error('输入密码不一致'))
+                    }
+                }
+                return {
+                    form: {
+                        username: '',
+                        password: '',
+                        password2: '',
+                        email: '',
+                        phone: '',
+                        sex: '1'
+                    },
+                    rules: {
+                        username: [
+                            {
+                                validator: function (rule, value, callback) {
+                                    var usernamereg = /^[a-zA-Z0-9_-]{4,16}$/
+                                    if (value.trim() == '') {
+                                        callback(new Error('请输入用户名'))
+                                    } else if (!usernamereg.test(value)) {
+                                        callback(new Error('4到16位（字母，数字，下划线，减号）'))
+                                    } else {
+                                        chkExist({
+                                            filed: 'username',
+                                            value: value,
+                                            table: 'Tusers'
+                                        }, callback)
+                                    }
+
+                                },
+                                trigger: 'blur'
+                            },
+
+                        ],
+                        password: [
+                            {
+                                validator: function (rule, value, callback) {
+                                    if (value.trim() == '') {
+                                        callback(new Error('请输入密码'))
+                                    } else if (!/^\d{6,10}$/.test(value)) {
+                                        callback(new Error('6到10位数字'))
+                                    } else {
+                                        _this.$refs.form.validateField('password2')
+                                        callback()
+                                    }
+                                    trigger: 'blur'
+                                }
+                            }
+                        ],
+                        password2: [
+                            {
+                                validator: chkpwd
+                            }
+                        ],
+                        email: [
+                            {
+                                validator: function (rule, value, callback) {
+                                    if (value.trim() == '') {
+                                        callback(new Error('请输入邮箱'))
+                                    } else if (!/^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/.test(value)) {
+                                        callback(new Error('邮箱格式不正确'))
+                                    } else {
+                                        chkExist({
+                                            filed: 'email',
+                                            value: value,
+                                            table: 'Tusers'
+                                        }, callback)
+                                    }
+                                },
+                                trigger: 'blur'
+                            }
+                        ],
+                        phone: [
+                            {
+                                validator: function (rule, value, callback) {
+                                    if (value.trim() == '') {
+                                        callback(new Error('请输入手机号'))
+                                    } else if (!value.match(/^((13[0-9])|(14[5|7])|(15([0-3]|[5-9]))|(18[0,5-9]))\d{8}$/)) {
+                                        callback(new Error('手机号格式不正确'))
+                                    } else {
+                                        chkExist({
+                                            filed: 'phone',
+                                            value: value,
+                                            table: 'Tusers'
+                                        }, callback)
+                                    }
+                                    trigger: 'blur'
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            methods: {
+                regist() {//验证全部通过 方可提交
+                    this.$refs.form.validate(function (valid) {
+                        if (valid) {
+                            registform.submit()
+                        }
+                    })
+
+                }
+            }
+        })
+
+    </script>
+</body>
+
+</html>

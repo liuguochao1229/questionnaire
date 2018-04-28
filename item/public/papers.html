@@ -1,0 +1,256 @@
+<div id="paper">
+    <div style="padding:10px">
+        <el-button @click="dgshow=true" type="primary" size="mini">创建问卷</el-button>
+    </div>
+    <el-table :data="paperData" style="width: 100%">
+        <el-table-column prop="title" label="标题" width="180">
+        </el-table-column>
+        <el-table-column prop="creator_id" label="创建人" width="180">
+            <template slot-scope="scope">
+                <div slot="reference" class="name-wrapper" @click="console.log(scope)">
+                    <el-tag size="medium">{{scope.row.creator_id}}</el-tag>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="创建时间">
+            <template slot-scope="scope">
+                {{scope.row.ctime|currency}}
+            </template>
+        </el-table-column>
+        <el-table-column label="修改时间">
+            <template slot-scope="scope">
+                {{scope.row.mtime|currency}}
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" width="300">
+            <template slot-scope="scope">
+                <el-button size="mini" type="success" @click="answer(scope.row.id)">详情</el-button>
+                <el-button size="mini" type="primary">
+                    <a target="_blank" :href="'/papers/release?id='+scope.row.id" style="color:white;text-decoration:none">发布</a>
+                </el-button>
+                <el-button size="mini" type="warning" @click="showData(scope.row.id)">编辑</el-button>
+                <el-button size="mini" type="danger" @click="del(scope)">删除</el-button>
+
+            </template>
+        </el-table-column>
+    </el-table>
+    <el-dialog fullscreen title="添加问卷" :visible.sync="dgshow">
+        <div class="content">
+            <div class="cleft">
+                <el-tree show-checkbox default-expand-all :data="outline" :props="defaultProps" @check-change="selectNode"></el-tree>
+            </div>
+            <div class="cright">
+                <el-card style="margin:5px" v-for="(item,index) in page.content" :key="'papers_'+index" :header="item.label">
+                    <el-radio-group v-model="page.content[index].answer">
+                        <el-radio v-for="(i,index) in page.item" :key="'item_'+index" :label="i.id">
+                            {{i.text}}
+                        </el-radio>
+                    </el-radio-group>
+                </el-card>
+
+            </div>
+        </div>
+
+        <div slot="footer">
+            <el-button @click="dgshow = false">取 消</el-button>
+            <el-button type="primary" @click="saveQues">确 定</el-button>
+        </div>
+
+    </el-dialog>
+</div>
+<style>
+</style>
+<script>
+    new Vue({
+        el: '#paper',
+        filters: {
+            currency(time) {
+                if (new Date(time).getTime() != 0) {
+                    var ntime = new Date(time),
+                        y = ntime.getFullYear(),
+                        m = ntime.getMonth() + 1,
+                        d = ntime.getDate()
+                    return y + '-' + m + '-' + d
+                }
+            }
+        },
+        created: function () {
+            var _this = this
+            $.get('/outline', function (result) {
+                if (result.error == 0) {
+
+                    _this.outline = result.data
+                }
+            })
+            $.get('/way', function (result) {
+                if (result.error == 0) {
+                    _this.page.item = JSON.parse(result.data.text)
+                }
+            })
+            $.get('/papers', function (result) {
+                if (result.error == 0) {
+                    _this.paperData = result.data
+                    $.get('/users/get', function (result) {
+                        if (result.error == 0) {
+                            _this.match = result.data
+                            for (var i = 0; i < _this.paperData.length; i++) {
+                                for (var j = 0; j < _this.match.length; j++) {
+                                    if (_this.paperData[i].creator_id == _this.match[j].id) {
+                                        _this.paperData[i].creator_id = _this.match[j].username
+                                    }
+                                }
+                            }
+                        }
+                    })
+                }
+            })
+
+        },
+        methods: {
+            showData(id) {
+                indexVm.handle('/menu/paper_edit.html?paper_id=' + id)
+            },
+            answer(id) {
+                indexVm.handle('/menu/paper_answer.html?paper_id=' + id)
+            },
+            del(scope) {
+                var _this = this;
+                _this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning',
+                    callback: function (action) {
+                        if (action == 'cancel') {
+                            return
+                        }
+                        _this.loading2 = true;
+                        $.get('/papers/del', { id: scope.row.id }, function (result) {
+                            if (result.error == 0) {
+                                _this.paperData.splice(scope.$index, 1)
+                                _this.$message({
+                                    type: 'success',
+                                    message: '删除成功'
+                                })
+                            } else {
+                                console.error("删除失败")
+                            }
+                            _this.loading2 = false;
+                        })
+
+                    }
+                })
+            },
+            saveQues() {
+                var _this = this
+                if (_this.page.content.length != 0) {
+                    this.$prompt('请输入标题', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        inputPattern: /^.+$/,
+                        inputErrorMessage: '内容不能为空',
+                        callback(action, obj) {
+                            if (action == "confirm" && _this.page.content.length != 0) {
+                                _this.page.title = obj.inputValue
+                                $.post('/papers/add', {
+                                    title: _this.page.title,
+                                    content: JSON.stringify(_this.page.content),
+                                    item: JSON.stringify(_this.page.item),
+                                }, function (result) {
+                                    if (result.error == 0) {
+                                        $.get('/papers', function (result) {
+                                            if (result.error == 0) {
+                                                _this.paperData = result.data
+                                                $.get('/users/get', function (result) {
+                                                    if (result.error == 0) {
+                                                        _this.match = result.data
+                                                        for (var i = 0; i < _this.paperData.length; i++) {
+                                                            for (var j = 0; j < _this.match.length; j++) {
+                                                                if (_this.paperData[i].creator_id == _this.match[j].id) {
+                                                                    _this.paperData[i].creator_id = _this.match[j].username
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                })
+                                            }
+                                        })
+
+                                    }
+                                })
+                            }
+                            _this.dgshow = false
+                        }
+                    })
+                } else {
+                    this.$message({
+                        showClose: true,
+                        message: '问卷内容不能为空',
+                        type: 'warning'
+                    });
+
+                }
+
+            },
+            selectNode(data, onSelect) {
+                if (data.children.length == 0) {
+                    if (onSelect) {
+                        this.page.content.push(data)
+                    } else {
+                        var index = this.page.content.indexOf(data)
+                        this.page.content.splice(index, 1)
+                    }
+
+                }
+            },
+        },
+        data: function () {
+            return {
+                dgshow: false,
+                paperData: [],
+                outline: [],
+                match: [],
+                page: {
+                    title: '',
+                    loading2: true,
+                    content: [],
+                    item: ''
+                },
+                defaultProps: {
+                    children: 'children',
+                    label: 'label'
+                }
+            }
+        }
+    })
+</script>
+<style>
+    .content {
+        overflow: hidden;
+    }
+
+    .content>div {
+        float: left;
+        margin: 5px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    .cleft {
+        width: 18%;
+    }
+
+    .cright {
+        width: 80%;
+    }
+
+    ul {
+        height: 40px;
+        line-height: 40px;
+    }
+
+    ul .sp1 {
+        display: inline-block;
+        width: 80px;
+        text-align: center;
+    }
+</style>

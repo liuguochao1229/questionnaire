@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=f, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="/js/webuploader/webuploader.css">
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/webuploader/webuploader.min.js"></script>
+</head>
+
+<body>
+    <div id="picker">选择文件</div>
+    <ul id="lists">
+    </ul>
+    <script>
+        var uploader = WebUploader.create({
+            // 选完文件后，是否自动上传。
+            auto: true,
+            // swf文件路径
+            swf: '/js/Uploader.swf',
+            // 文件接收服务端。
+            server: '/upload',
+            pick: '#picker',
+            resize: false,
+            accept: {
+                extensions: 'jpg,png'//允许上传此后缀文件
+            },
+            fileNumLimit: 2,//每次上传数量限制为2
+            fileSingleSizeLimit: 1024 * 1024 * 10,//单个文件大小限制
+            fileSizeLimit: 1024 * 1024 * 10//所有文件综合
+        })
+        // 当有文件被添加进队列的时候
+        uploader.on('fileQueued', function (file) {
+            $('#lists').append(`
+                <li id="`+ file.id + `" >
+                    <div class="thumb"></div>
+                    <divclass="filename">`+ file.name + `</div>
+                    <div class="progress">
+                        <progress value="0" max="1"></progress>
+                    </div>
+                </li>
+            `)
+
+            uploader.makeThumb(file, function (error, src) {
+                if (error) {
+                    $('#' + file.id + '.thumb').html('文件无法预览')
+
+                } else {
+                    $('#' + file.id + '.thumb').append('<img src="' + src + '">')
+                }
+            }, 200)
+        })
+
+
+        uploader.on('uploadProgress', function (file, percentage) {
+            // console.log('第'+file.id+'个')
+            $('#' + file.id + ' progress').prop('value', percentage)
+        })
+
+        uploader.on('uploadSuccess', function (file) {
+            $.get('/edit/photo', { file: file.name }, result => {
+                if (result.error == 0) {
+                    $('#' + file.id).addClass('success');
+                    $('#' + file.id + ' .progress').html('上传成功')
+                }
+            })
+
+
+        })
+
+        uploader.on('uploadError', function (file) {
+            $('#' + file.id).addClass('error');
+            $('#' + file.id + ' .progress').html('上传失败')
+        })
+    </script>
+</body>
+
+</html>

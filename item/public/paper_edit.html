@@ -1,0 +1,147 @@
+<div id="paper_edit">
+    编辑问卷
+    <div class="content">
+        <div class="cleft">
+            <!-- :default-checked-keys="checked" -->
+            <el-tree ref="tree" node-key="id" show-checkbox default-expand-all :data="outline" :props="defaultProps" @check-change="selectNode"></el-tree>
+        </div>
+        <div class="cright">
+            <ul v-for="(item,index) in editpage.content" :key="'editpage'+index">
+                <span class="sp1">{{item.label}}</span>
+                <el-radio v-for="(i,index) in editpage.item" :key="'item_'+index" :label="i.id">
+                    {{i.text}}
+                </el-radio>
+            </ul>
+        </div>
+    </div>
+
+    <div slot="footer">
+        <el-button @click="cancle">取 消</el-button>
+        <el-button type="primary" @click="saveQues">确 定</el-button>
+    </div>
+
+
+</div>
+
+<script>
+    new Vue({
+        el: '#paper_edit',
+        created: function () {
+            var _this = this
+            $.get('/outline', function (result) {
+                if (result.error == 0) {
+                    _this.outline = result.data
+                }
+            })
+            $.get('/paper_edit', { id: Cookies.get('paper_id') }, function (result) {           
+                if (result.error == 0) {      
+                    _this.editpage.title = result.data.title
+                    _this.$refs.tree.setCheckedNodes(JSON.parse(result.data.content))
+                }
+
+            })
+            $.get('/way', function (result) {
+                if (result.error == 0) {
+                    _this.editpage.item = JSON.parse(result.data.text)
+                    console.log(_this.editpage.item)
+                }
+            })
+
+        },
+        methods: {
+            saveQues() {
+                var _this = this
+                this.$prompt('请输入标题', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    inputValue: _this.editpage.title,
+                    callback(action, obj) {
+                        if (action == "confirm") {
+                            _this.editpage.title = obj.inputValue
+                            $.post('/papers/edit', {
+                                title: _this.editpage.title,
+                                content: JSON.stringify(_this.editpage.content),
+                            }, function (result) {
+                                if (result.error == 0) {
+                                    indexVm.handle('/menu/papers.html')
+                                }
+                            })
+                        }
+                    }
+                })
+            },
+            cancle() {
+                indexVm.handle('/menu/papers.html')
+            },
+            selectNode(data, onSelect) {
+                if (data.children.length == 0) {
+                    if (onSelect) {
+                        this.editpage.content.push(data)
+                    } else {
+                        var index = this.editpage.content.indexOf(data)
+                        this.editpage.content.splice(index, 1)
+                    }
+
+                }
+            },
+        },
+        data: function () {
+            return {
+                // paperData: [],
+                editData: [],
+                outline: [],
+                editpage: {
+                    title: '',
+                    content: [],
+                    item: [
+                        
+                        { id: 1, text: '优秀', val: 5 },
+                        { id: 2, text: '良好', val: 4 },
+                        { id: 3, text: '中等', val: 3 },
+                        { id: 4, text: '偏下', val: 2 },
+                        { id: 5, text: '较差', val: 1 }
+                      
+                        
+                    ]
+            },
+                defaultProps: {
+                children: 'children',
+                label: 'label'
+            }
+        }
+    }
+    })
+</script>
+<style>
+    .content {
+        overflow: hidden;
+    }
+
+    .content>div {
+        float: left;
+        margin: 5px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* .cleft {
+        width: 18%;
+    } */
+
+    .cright {
+        width: 80%;
+    }
+
+    ul {
+        height: 40px;
+        line-height: 40px;
+    }
+
+    ul .sp1 {
+        display: inline-block;
+        /* width: 80px; */
+        text-align: center;
+    }
+</style>
